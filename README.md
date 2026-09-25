@@ -76,7 +76,7 @@ También se implementan mecanismos de seguridad adicionales: IPS con una firma p
 La siguiente imagen muestra la topología implementada en GNS3:
 
 <p align="center">
-  <img src="topologia-lab-2174.jpeg" alt="Topología del laboratorio FortiGate" width="900">
+  <img src="Topología lab-2174.jpeg" alt="Topología del laboratorio FortiGate" width="900">
 </p>
 
 ### Tabla de direccionamiento
