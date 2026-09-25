@@ -1,1 +1,163 @@
-! PENDIENTE: pegar/exportar show running-config del switch.
+SW1-2174#show running-config
+Building configuration...
+
+Current configuration : 4071 bytes
+!
+! Last configuration change at 18:46:26 UTC Fri Sep 25 2026
+!
+version 15.2
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service password-encryption
+service compress-config
+!
+hostname SW1-2174
+!
+boot-start-marker
+boot-end-marker
+!
+!
+enable secret 5 $1$PZW/$vpMz/7qxNUWC2cqjer5Je0
+!
+no aaa new-model
+!
+!
+!
+!
+!
+!
+!
+!
+ip dhcp snooping vlan 10
+ip dhcp snooping
+no ip domain-lookup
+ip cef
+no ipv6 cef
+!
+!
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface GigabitEthernet0/0
+ description TRUNK-FORTIGATE
+ switchport trunk allowed vlan 10,20,30
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport nonegotiate
+ negotiation auto
+ spanning-tree portfast edge trunk
+ ip dhcp snooping trust
+!
+interface GigabitEthernet0/1
+ description PC-USER-2174
+ switchport access vlan 10
+ switchport mode access
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ switchport port-security mac-address sticky 0cab.f056.0000
+ switchport port-security
+ negotiation auto
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet0/2
+ description WEB-SV
+ switchport access vlan 20
+ switchport mode access
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ switchport port-security mac-address sticky 0c39.373f.0000
+ switchport port-security
+ negotiation auto
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet0/3
+ description DB-SV
+ switchport access vlan 30
+ switchport mode access
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ switchport port-security mac-address sticky 0ca7.e18b.0000
+ switchport port-security
+ negotiation auto
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/0
+ negotiation auto
+!
+interface GigabitEthernet1/1
+ negotiation auto
+!
+interface GigabitEthernet1/2
+ negotiation auto
+!
+interface GigabitEthernet1/3
+ negotiation auto
+!
+ip forward-protocol nd
+!
+ip http server
+ip http secure-server
+!
+ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+!
+!
+!
+!
+!
+!
+control-plane
+!
+banner exec ^C
+IOSv - Cisco Systems Confidential -
+
+Supplemental End User License Restrictions
+
+This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+^C
+banner incoming ^C
+IOSv - Cisco Systems Confidential -
+
+Supplemental End User License Restrictions
+
+This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+^C
+banner login ^C
+IOSv - Cisco Systems Confidential -
+
+Supplemental End User License Restrictions
+
+This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+^C
+!
+line con 0
+line aux 0
+line vty 0 4
+login
+!
+!
+end
