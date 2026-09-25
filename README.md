@@ -706,37 +706,6 @@ Se comprobaron:
 
 Únicamente queda agregar al inicio del README el enlace definitivo del video demostrativo una vez sea publicado.
 
-## 📸 Capturas de pantalla
-
-```text
-images/
-├── 01_topologia_gns3.png
-├── 02_interfaces_fortigate.png
-├── 03_vlans_fortigate.png
-├── 04_switch_vlans_trunk.png
-├── 05_switch_port_security.png
-├── 06_dhcp_vlan10.png
-├── 07_firewall_policies.png
-├── 08_ips_sqli_profile.png
-├── 09_custom_signature_sqli.png
-├── 10_file_filter_exe.png
-├── 11_dos_policy.png
-├── 12_prueba_dhcp_usuario.png
-├── 13_prueba_internet_nat.png
-├── 14_prueba_usuario_web_https.png
-├── 15_prueba_usuario_db_bloqueado.png
-├── 16_prueba_web_db_mysql.png
-├── 17_prueba_web_db_otros_bloqueados.png
-├── 18_sqli_attack_detected.png
-├── 19_sqli_quarantine_monitor.png
-├── 20_file_filter_profile.png
-├── 21_prueba_exe_bloqueado.png
-├── 22_log_exe_bloqueado.png
-├── 23_dos_policy.png
-├── 24_prueba_dos.png
-└── 25_log_dos.png
-```
-
 ---
 
 ## 📁 Archivos del repositorio
@@ -764,22 +733,3 @@ La configuración de Full SSL Inspection quedó creada, pero durante la comproba
 Para validar de forma reproducible la firma IPS, el bloqueo y la cuarentena se utilizó una policy HTTP temporal exclusivamente para la demostración. Esta policy queda deshabilitada en el estado final.
 
 ---
-
-## 📝 Estado del proyecto
-
-**Configuración principal:** completada.
-
-**Validaciones realizadas:**
-- HTTPS hacia WEB
-- bloqueo Usuarios → DB
-- WEB → DB en 3306
-- bloqueo de otros protocolos WEB → DB
-- SQL Injection / IPS
-- cuarentena de atacante
-
-**Pendiente:**
-- validación final del File Filter `.exe`
-- validación DoS
-- capturas finales
-- exportación de running-configs
-- video demostrativo
