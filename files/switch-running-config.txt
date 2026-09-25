@@ -1,0 +1,1 @@
+! PENDIENTE: pegar/exportar show running-config del switch.
