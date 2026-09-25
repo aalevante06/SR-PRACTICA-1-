@@ -73,28 +73,11 @@ También se implementan mecanismos de seguridad adicionales: IPS con una firma p
 ---
 
 ## 🗺️ Topología y direccionamiento
+La siguiente imagen muestra la topología implementada en GNS3:
 
-### Topología lógica
-
-```text
-                         INTERNET
-                            │
-                           NAT1
-                            │
-                         port1
-                    ┌─────────────┐
-                    │  FortiGate  │
-                    └──────┬──────┘
-                           │ port2
-                     TRUNK 802.1Q
-                           │
-                      Switch-2174-1
-                  ┌────────┼────────┐
-                  │        │        │
-               VLAN 10  VLAN 20  VLAN 30
-                  │        │        │
-               PC-USER   WEB-SV    DB-SV
-```
+<p align="center">
+  <img src="topologia-lab-2174.jpeg" alt="Topología del laboratorio FortiGate" width="900">
+</p>
 
 ### Tabla de direccionamiento
 
