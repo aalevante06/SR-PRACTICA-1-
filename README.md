@@ -260,68 +260,451 @@ Usuario: labweb@10.21.74.130
 
 ## ✅ Validación de la implementación
 
-### Prueba 01 — VLAN y DHCP
-Cliente en VLAN 10 obtiene IP automáticamente dentro de `10.21.74.0/25`.
+A continuación se presentan las principales pruebas realizadas para validar la segmentación, las políticas de firewall y los mecanismos de seguridad implementados en el laboratorio.
 
-**Evidencia:** `images/12_prueba_dhcp_usuario.png`
+---
 
-### Prueba 02 — Internet y NAT
-Desde PC-USER se comprueba salida a Internet y DNS.
+### Prueba 01 — Interfaces y VLANs en FortiGate
 
-**Evidencia:** `images/13_prueba_internet_nat.png`
+Se configuraron las interfaces físicas necesarias para la conexión WAN, el enlace trunk hacia el switch y la administración del FortiGate.
 
-### Prueba 03 — Usuarios → WEB HTTPS
-```bash
-curl -k https://10.21.74.130
+<p align="center">
+  <img src="images/02_interfaces_fortigate.png" alt="Interfaces de FortiGate" width="900">
+</p>
+
+Sobre `port2` se configuraron las VLAN 10, 20 y 30 con sus respectivos gateways.
+
+<p align="center">
+  <img src="images/03_vlans_fortigate.png" alt="VLANs configuradas en FortiGate" width="900">
+</p>
+
+---
+
+### Prueba 02 — VLANs, trunk y Port Security en el switch
+
+El switch transporta las VLAN 10, 20 y 30 mediante un enlace trunk 802.1Q hacia FortiGate.
+
+<p align="center">
+  <img src="images/04_switch_vlans_trunk.png" alt="VLANs y trunk del switch" width="900">
+</p>
+
+También se implementó Port Security en los puertos de acceso mediante Sticky MAC y modo de violación restrict.
+
+<p align="center">
+  <img src="images/05_switch_port_security.png" alt="Port Security del switch" width="900">
+</p>
+
+---
+
+### Prueba 03 — DHCP para VLAN de usuarios
+
+La VLAN 10 utiliza el gateway `10.21.74.1/25`.
+
+El servicio DHCP se encuentra habilitado con el rango:
+
+```text
+10.21.74.10 - 10.21.74.126
 ```
 
-**Evidencia:** `images/14_prueba_usuario_web_https.png`
+<p align="center">
+  <img src="images/06_dhcp_usuarios.png" alt="DHCP de VLAN 10" width="900">
+</p>
 
-### Prueba 04 — Usuarios → DB bloqueado
-```bash
-nc -vz -w 3 10.21.74.146 3306
+---
+
+### Prueba 04 — WEB → DATABASE por MySQL
+
+La política `WEB-TO-DB-MYSQL` permite únicamente el servicio MySQL desde el servidor WEB hacia el servidor DATABASE.
+
+```text
+WEB-SERVER → DB-SERVER
+Servicio: MYSQL / TCP 3306
+Acción: ACCEPT
 ```
 
-**Evidencia:** `images/15_prueba_usuario_db_bloqueado.png`
+<p align="center">
+  <img src="images/07_politica_web_db.png" alt="Política WEB a DB MySQL" width="900">
+</p>
 
-### Prueba 05 — WEB → DB MYSQL
-```bash
-nc -vz -w 3 10.21.74.146 3306
+El resto del tráfico entre estos servidores es bloqueado mediante `BLOCK-WEB-TO-DB-OTHER`.
+
+<p align="center">
+  <img src="images/08_bloqueo_web_a_db_other.png" alt="Bloqueo de otros protocolos WEB a DB" width="900">
+</p>
+
+---
+
+### Prueba 05 — Usuarios → Internet
+
+La política `USUARIOS-TO-INTERNET` permite la salida de la VLAN de usuarios hacia la WAN mediante NAT.
+
+También incorpora los perfiles:
+
+- `APP-CONTROL-USUARIOS-2174`
+- `BLOCK-EXE-2174`
+- `certificate-inspection`
+
+<p align="center">
+  <img src="images/09_politica_usuarios_internet.png" alt="Política Usuarios a Internet" width="900">
+</p>
+
+---
+
+### Prueba 06 — Application Control
+
+Se creó el perfil `APP-CONTROL-USUARIOS-2174`.
+
+Entre los controles configurados se encuentran:
+
+- P2P → Block
+- Proxy → Block
+- QUIC → Block
+- otras categorías → Monitor / Pass según la configuración
+
+<p align="center">
+  <img src="images/10_app_control_profile.png" alt="Application Control" width="900">
+</p>
+
+---
+
+### Prueba 07 — SSL Deep Inspection
+
+Se configuró el perfil `custom-deep-inspection` utilizando **Full SSL Inspection** y el certificado `Fortinet_CA_SSL`.
+
+HTTPS se encuentra asociado al puerto TCP/443.
+
+<p align="center">
+  <img src="images/11_ssl_inspection.png" alt="SSL Deep Inspection" width="900">
+</p>
+
+---
+
+### Prueba 08 — IPS y SQL Injection
+
+Se creó el sensor:
+
+```text
+SQLI-QUARANTINE-2174
 ```
 
-**Evidencia:** `images/16_prueba_web_db_mysql.png`
+El sensor utiliza la firma personalizada `SQLI-2174`, tiene Packet Logging habilitado y aplica una cuarentena temporal de 5 minutos.
 
-### Prueba 06 — WEB → DB otros protocolos bloqueados
-**Evidencia:** `images/17_prueba_web_db_otros_bloqueados.png`
+<p align="center">
+  <img src="images/12_ips_sqli_profile.png" alt="Perfil IPS SQL Injection" width="900">
+</p>
 
-### Prueba 07 — SQL Injection
+La firma personalizada analiza tráfico TCP originado por el cliente y detecta el patrón codificado:
+
+```text
+%20UNION%20SELECT%20
+```
+
+<p align="center">
+  <img src="images/13_custom_signature_sqli.png" alt="Firma personalizada SQL Injection" width="900">
+</p>
+
+Para realizar la prueba controlada se utilizó:
+
 ```bash
 curl -v "http://10.21.74.130/?id=1%20UNION%20SELECT%201,2,3"
 ```
 
-FortiGate muestra **Attack Detected** y la IP aparece como Banned IP por IPS.
+FortiGate detectó la solicitud y devolvió el mensaje:
 
-**Evidencias:**
-- `images/18_sqli_attack_detected.png`
-- `images/19_sqli_quarantine_monitor.png`
+```text
+Attack Detected
+Blocked because of an intrusion attack
+```
 
-### Prueba 08 — Bloqueo de EXE
-Validación final pendiente.
+<p align="center">
+  <img src="images/14_sqli_attack_detected.png" alt="SQL Injection detectado y bloqueado" width="900">
+</p>
 
-**Evidencias:**
-- `images/20_file_filter_profile.png`
-- `images/21_prueba_exe_bloqueado.png`
-- `images/22_log_exe_bloqueado.png`
+Después de la detección, la IP del equipo de usuarios `10.21.74.10` fue colocada temporalmente en cuarentena por el IPS.
 
-### Prueba 09 — Protección DoS
-Validación final pendiente.
-
-**Evidencias:**
-- `images/23_dos_policy.png`
-- `images/24_prueba_dos.png`
-- `images/25_log_dos.png`
+<p align="center">
+  <img src="images/15_sqli_quarantine_monitor.png" alt="Quarantine Monitor" width="900">
+</p>
 
 ---
+
+### Prueba 09 — Usuarios → WEB por HTTPS
+
+Desde el equipo ubicado en VLAN 10 se verificó el acceso al servidor WEB mediante HTTPS.
+
+Comando utilizado:
+
+```bash
+curl -k -I https://10.21.74.130
+```
+
+El servidor respondió:
+
+```text
+HTTP/1.1 200 OK
+Server: Apache
+Content-Type: text/html
+```
+
+<p align="center">
+  <img src="images/16_prueba_usuario_web_https.png" alt="Prueba Usuarios a WEB HTTPS" width="900">
+</p>
+
+---
+
+### Prueba 10 — Usuarios → DATABASE bloqueado
+
+Se intentó conectar directamente desde la VLAN de usuarios hacia MariaDB:
+
+```bash
+nc -vz -w 3 10.21.74.146 3306
+```
+
+La conexión expiró debido a la política de bloqueo configurada en FortiGate.
+
+<p align="center">
+  <img src="images/17_prueba_usuario_db_bloqueado.png" alt="Usuarios a DB bloqueado" width="900">
+</p>
+
+---
+
+### Prueba 11 — WEB → DATABASE permitido únicamente por TCP/3306
+
+Desde `WEB-SV-2174` se verificó conectividad hacia MariaDB:
+
+```bash
+nc -vz -w 3 10.21.74.146 3306
+```
+
+El resultado confirmó que TCP/3306 está permitido:
+
+```text
+Connection to 10.21.74.146 3306 port [tcp/mysql] succeeded!
+```
+
+<p align="center">
+  <img src="images/18_prueba_web_db_mysql.png" alt="WEB a DB MySQL permitido" width="900">
+</p>
+
+Para demostrar la restricción de otros servicios se probó TCP/22:
+
+```bash
+nc -vz -w 3 10.21.74.146 22
+```
+
+La conexión expiró, confirmando que el resto del tráfico queda bloqueado.
+
+<p align="center">
+  <img src="images/19_prueba_web_db_otros_bloqueados.png" alt="Otros puertos WEB a DB bloqueados" width="900">
+</p>
+
+---
+
+### Prueba 12 — File Filter y bloqueo de ejecutables
+
+Se creó el perfil:
+
+```text
+BLOCK-EXE-2174
+```
+
+con la regla:
+
+```text
+BLOCK-WINDOWS-EXE
+Traffic: Incoming
+Protocol: HTTP
+File Type: exe
+Action: Block
+```
+
+<p align="center">
+  <img src="images/20_file_filter_profile.png" alt="Perfil File Filter para EXE" width="900">
+</p>
+
+Desde el equipo de usuarios se intentó descargar un ejecutable Windows de prueba:
+
+```bash
+curl -v -o /tmp/prueba2174.exe http://10.21.74.130/prueba2174.exe
+```
+
+FortiGate interrumpió la transferencia.
+
+<p align="center">
+  <img src="images/21_prueba_exe_bloqueado.png" alt="Prueba de descarga EXE bloqueada" width="900">
+</p>
+
+El evento quedó registrado en **Log & Report → File Filter** con:
+
+```text
+Action: blocked
+File Name: prueba2174.exe
+File Type: exe
+Filter Name: BLOCK-WINDOWS-EXE
+```
+
+<p align="center">
+  <img src="images/22_log_exe_bloqueado.png" alt="Log de EXE bloqueado" width="900">
+</p>
+
+---
+
+### Prueba 13 — Protección DoS
+
+Se configuró la política:
+
+```text
+DOS-PROTECTION-WEB-2174
+```
+
+con protección y logging para anomalías como:
+
+```text
+tcp_syn_flood       Block     100
+tcp_port_scan       Block      50
+tcp_src_session     Block     100
+tcp_dst_session     Block     200
+icmp_flood          Block      50
+```
+
+<p align="center">
+  <img src="images/23_dos_policy.png" alt="Política de protección DoS" width="900">
+</p>
+
+Para comprobar la protección se generó tráfico SYN controlado dentro del laboratorio:
+
+```bash
+sudo hping3 -S -p 443 -i u5000 -c 300 10.21.74.130
+```
+
+La prueba generó una pérdida significativa de respuestas una vez superado el threshold configurado.
+
+<p align="center">
+  <img src="images/24_prueba_dos.png" alt="Prueba SYN Flood" width="900">
+</p>
+
+FortiGate registró el evento como:
+
+```text
+Source: 10.21.74.10
+Attack Name: tcp_syn_flood
+Action: clear_session
+```
+
+<p align="center">
+  <img src="images/25_log_dos.png" alt="Log de protección DoS" width="900">
+</p>
+
+---
+
+## 📸 Capturas de pantalla
+
+Todas las evidencias utilizadas en la documentación se encuentran en el directorio `images/`.
+
+```text
+images/
+├── 01_topologia_gns3.png
+├── 02_interfaces_fortigate.png
+├── 03_vlans_fortigate.png
+├── 04_switch_vlans_trunk.png
+├── 05_switch_port_security.png
+├── 06_dhcp_usuarios.png
+├── 07_politica_web_db.png
+├── 08_bloqueo_web_a_db_other.png
+├── 09_politica_usuarios_internet.png
+├── 10_app_control_profile.png
+├── 11_ssl_inspection.png
+├── 12_ips_sqli_profile.png
+├── 13_custom_signature_sqli.png
+├── 14_sqli_attack_detected.png
+├── 15_sqli_quarantine_monitor.png
+├── 16_prueba_usuario_web_https.png
+├── 17_prueba_usuario_db_bloqueado.png
+├── 18_prueba_web_db_mysql.png
+├── 19_prueba_web_db_otros_bloqueados.png
+├── 20_file_filter_profile.png
+├── 21_prueba_exe_bloqueado.png
+├── 22_log_exe_bloqueado.png
+├── 23_dos_policy.png
+├── 24_prueba_dos.png
+└── 25_log_dos.png
+```
+
+---
+
+## 📁 Archivos del repositorio
+
+La estructura final del repositorio es:
+
+```text
+SR-PRACTICA-1-/
+├── README.md
+├── images/
+│   └── evidencias del laboratorio
+├── files/
+│   ├── fortigate-running-config.conf
+│   └── switch-running-config.txt
+└── scripts/
+    ├── db-setup.sql
+    ├── prueba2174.c
+    └── test-commands.sh
+```
+
+### Running-configs
+
+La configuración final de FortiGate está disponible en:
+
+[Ver configuración de FortiGate](files/fortigate-running-config.conf)
+
+La configuración final del switch está disponible en:
+
+[Ver configuración del switch](files/switch-running-config.txt)
+
+---
+
+## ⚠️ Limitaciones observadas
+
+Durante el laboratorio se configuró Full SSL Inspection mediante el perfil `custom-deep-inspection`.
+
+Sin embargo, durante las pruebas HTTPS el cliente continuó observando el certificado autofirmado original del servidor WEB. Debido a esta limitación de la instancia utilizada, la comprobación funcional de la firma IPS personalizada para SQL Injection se realizó mediante una política HTTP temporal y controlada.
+
+Esta política de prueba quedó deshabilitada al finalizar la validación.
+
+También se utilizaron políticas temporales de acceso a Internet para instalar y actualizar paquetes en los servidores. Estas políticas permanecen deshabilitadas en la configuración final.
+
+---
+
+## ✅ Estado final del proyecto
+
+La implementación y las validaciones técnicas principales fueron completadas correctamente.
+
+Se comprobaron:
+
+- Segmentación mediante VLAN 10, 20 y 30
+- Trunk 802.1Q
+- Port Security
+- DHCP para usuarios
+- NAT y salida a Internet
+- Acceso Usuarios → WEB mediante HTTPS
+- Bloqueo Usuarios → DATABASE
+- Acceso WEB → DATABASE únicamente por TCP/3306
+- Bloqueo de otros servicios WEB → DATABASE
+- Application Control
+- SSL Inspection
+- IPS con firma personalizada
+- detección de SQL Injection
+- bloqueo de SQL Injection
+- cuarentena del atacante
+- File Filter para ejecutables `.exe`
+- registro del bloqueo de archivos
+- protección DoS
+- detección de `tcp_syn_flood`
+- exportación de running-config de FortiGate
+- exportación de running-config del switch
+
+### Pendiente
+
+Únicamente queda agregar al inicio del README el enlace definitivo del video demostrativo una vez sea publicado.
 
 ## 📸 Capturas de pantalla
 
