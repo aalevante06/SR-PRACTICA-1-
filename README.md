@@ -8,7 +8,7 @@
 
 ## 🎬 Video de demostración
 
-> **Video:** [Ver demostración en YouTube](PENDIENTE)
+> **Video:** [Ver demostración en YouTube](https://youtu.be/z4IkpudauRw)
 
 > El enlace final del video debe mantenerse al inicio del repositorio, como exige la tarea.
 
